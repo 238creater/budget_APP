@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>家計簿アプリ</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Smart Budget</p>
+          <h1>家計簿</h1>
+        </div>
+        <button class="icon-button" id="themeToggle" type="button" aria-label="テーマ切り替え" title="テーマ切り替え">
+          <span aria-hidden="true">◐</span>
+        </button>
+      </header>
+
+      <main>
+        <section class="view is-active" id="view-home" aria-labelledby="homeTitle">
+          <div class="month-card">
+            <div class="month-controls">
+              <button class="icon-button" id="prevMonth" type="button" aria-label="前の月" title="前の月">‹</button>
+              <button class="month-title-button" id="homeMonthToggle" type="button" aria-expanded="false" aria-controls="homeCalendar">
+                <p class="eyebrow">表示月</p>
+                <span class="month-title-text" id="homeTitle"></span>
+              </button>
+              <button class="icon-button" id="nextMonth" type="button" aria-label="次の月" title="次の月">›</button>
+            </div>
+            <button class="today-mini-button home-today-button" id="homeTodayMonth" type="button">今月へ移動</button>
+            <div class="summary-grid">
+              <div>
+                <span>収入</span>
+                <strong id="totalIncome">¥0</strong>
+              </div>
+              <div>
+                <span>支出</span>
+                <strong id="totalExpense">¥0</strong>
+              </div>
+              <div>
+                <span>繰越残高</span>
+                <strong id="totalBalance">¥0</strong>
+              </div>
+            </div>
+            <div class="compact-calendar" id="homeCalendar"></div>
+          </div>
+
+          <div class="section-title">
+            <h2>最近の記録</h2>
+            <button class="text-button" data-nav="add" type="button">追加</button>
+          </div>
+          <div class="transaction-list" id="recentList"></div>
+        </section>
+
+        <section class="view" id="view-add" aria-labelledby="addTitle">
+          <div class="section-title">
+            <h2 id="addTitle">記録を追加</h2>
+          </div>
+
+          <form class="entry-form" id="entryForm">
+            <button class="receipt-cta" id="openReceipt" type="button">
+              <span class="receipt-cta-icon" aria-hidden="true">▤</span>
+              <span class="receipt-cta-copy">
+                <span>レシートから追加</span>
+                <strong>写真を使って支出候補を作る</strong>
+              </span>
+              <span class="receipt-cta-arrow" aria-hidden="true">›</span>
+            </button>
+
+            <div class="segmented" role="group" aria-label="種別">
+              <button class="is-selected" type="button" data-type="expense">支出</button>
+              <button type="button" data-type="income">収入</button>
+            </div>
+
+            <label>
+              <span>金額</span>
+              <input id="amountInput" type="text" inputmode="numeric" pattern="[0-9０-９,，]*" placeholder="0" autocomplete="off" required>
+            </label>
+
+            <div class="form-field">
+              <span>日付</span>
+              <div class="date-picker-wrap" id="datePickerWrap">
+                <button class="date-picker-button" id="datePickerButton" type="button" aria-expanded="false">
+                  <strong id="datePickerLabel"></strong>
+                  <span>日付を選択</span>
+                </button>
+                <input id="dateInput" type="hidden" required>
+                <div class="date-picker-panel" id="datePickerPanel" hidden>
+                  <div class="date-picker-head">
+                    <button class="icon-button" id="datePickerPrev" type="button" aria-label="前の月" title="前の月">‹</button>
+                    <strong id="datePickerMonthLabel"></strong>
+                    <button class="icon-button" id="datePickerNext" type="button" aria-label="次の月" title="次の月">›</button>
+                  </div>
+                  <button class="today-mini-button" id="datePickerToday" type="button">今日へ移動</button>
+                  <div class="date-picker-grid" id="datePickerGrid"></div>
+                </div>
+              </div>
+            </div>
+
+            <label>
+              <span>カテゴリ</span>
+              <select id="categoryInput" required></select>
+            </label>
+
+            <div class="inline-add">
+              <input id="newCategoryInput" type="text" maxlength="16" placeholder="カテゴリを追加">
+              <input id="newCategoryColor" class="color-input" type="color" value="#1f8a70" aria-label="カテゴリ色">
+              <button class="icon-button" id="addCategory" type="button" aria-label="カテゴリ追加" title="カテゴリ追加">＋</button>
+            </div>
+
+            <label>
+              <span>メモ</span>
+              <textarea id="memoInput" rows="3" maxlength="120" placeholder="例: スーパー、友人との食事"></textarea>
+            </label>
+
+            <button class="primary-button" type="submit">保存する</button>
+          </form>
+        </section>
+
+        <section class="view" id="view-calendar" aria-labelledby="calendarTitle">
+          <div class="section-title">
+            <h2 id="calendarTitle">カレンダー</h2>
+            <button class="text-button" id="todayButton" type="button">今月</button>
+          </div>
+          <div class="calendar-controls">
+            <button class="icon-button" id="calendarPrevMonth" type="button" aria-label="前の月" title="前の月">‹</button>
+            <div class="month-picker" id="calendarMonthPicker">
+              <button class="month-picker-button" id="calendarMonthButton" type="button" aria-expanded="false">
+                <span>年月を選択</span>
+                <strong id="calendarMonthLabel"></strong>
+              </button>
+              <div class="month-picker-panel" id="calendarMonthPanel" hidden>
+                <div class="year-selector">
+                  <button class="icon-button" id="pickerPrevYear" type="button" aria-label="前年" title="前年">‹</button>
+                  <button class="year-button" id="pickerYearButton" type="button"></button>
+                  <button class="icon-button" id="pickerNextYear" type="button" aria-label="翌年" title="翌年">›</button>
+                </div>
+                <div class="month-grid" id="pickerMonths"></div>
+              </div>
+            </div>
+            <button class="icon-button" id="calendarNextMonth" type="button" aria-label="次の月" title="次の月">›</button>
+          </div>
+          <div class="calendar" id="calendar"></div>
+          <div class="day-detail" id="dayDetail"></div>
+        </section>
+
+        <section class="view" id="view-chart" aria-labelledby="chartTitle">
+          <div class="section-title">
+            <h2 id="chartTitle">分析</h2>
+            <select class="small-select" id="chartType">
+              <option value="expense">支出</option>
+              <option value="income">収入</option>
+            </select>
+          </div>
+          <div class="segmented chart-period" role="group" aria-label="分析期間">
+            <button class="is-selected" type="button" data-chart-period="month">月</button>
+            <button type="button" data-chart-period="week">週</button>
+          </div>
+          <button class="today-mini-button chart-today-button" id="chartTodayPeriod" type="button">今月へ移動</button>
+          <div class="chart-month-controls">
+            <button class="icon-button" id="chartPrevMonth" type="button" aria-label="前の期間" title="前の期間">‹</button>
+            <div class="chart-picker" id="chartPicker">
+              <button class="chart-period-button" id="chartPeriodButton" type="button" aria-expanded="false">
+                <strong id="chartMonthLabel"></strong>
+                <span>期間を選択</span>
+              </button>
+              <div class="chart-picker-panel" id="chartPickerPanel" hidden></div>
+            </div>
+            <button class="icon-button" id="chartNextMonth" type="button" aria-label="次の期間" title="次の期間">›</button>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="categoryChart" width="320" height="320" aria-label="カテゴリ別割合"></canvas>
+            <div class="chart-center" id="chartCenter"></div>
+          </div>
+          <div class="legend" id="chartLegend"></div>
+          <div class="chart-detail" id="chartDetail"></div>
+          <div class="month-compare" id="monthCompare"></div>
+        </section>
+
+        <section class="view" id="view-search" aria-labelledby="searchTitle">
+          <div class="section-title">
+            <h2 id="searchTitle">検索</h2>
+          </div>
+          <div class="search-panel">
+            <label>
+              <span>キーワード</span>
+              <input id="searchInput" type="search" placeholder="メモ・カテゴリで検索">
+            </label>
+            <div class="search-filters">
+              <label>
+                <span>種別</span>
+                <select id="searchType">
+                  <option value="all">すべて</option>
+                  <option value="expense">支出</option>
+                  <option value="income">収入</option>
+                </select>
+              </label>
+              <label>
+                <span>カテゴリ</span>
+                <select id="searchCategory">
+                  <option value="all">すべて</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          <div class="search-summary" id="searchSummary"></div>
+          <div class="transaction-list" id="searchResults"></div>
+        </section>
+
+        <section class="view" id="view-settings" aria-labelledby="settingsTitle">
+          <div class="section-title">
+            <h2 id="settingsTitle">設定</h2>
+          </div>
+          <div class="settings-panel">
+            <h3>カテゴリ</h3>
+            <div class="segmented settings-type" role="group" aria-label="カテゴリ種別">
+              <button class="is-selected" type="button" data-settings-type="expense">支出</button>
+              <button type="button" data-settings-type="income">収入</button>
+            </div>
+            <div class="inline-add settings-add">
+              <input id="settingsCategoryInput" type="text" maxlength="16" placeholder="新しいカテゴリ">
+              <input id="settingsCategoryColor" class="color-input" type="color" value="#1f8a70" aria-label="カテゴリ色">
+              <button class="icon-button" id="settingsAddCategory" type="button" aria-label="カテゴリ追加" title="カテゴリ追加">＋</button>
+            </div>
+            <div id="categoryChips"></div>
+          </div>
+          <div class="settings-panel">
+            <h3>固定費</h3>
+            <div class="fixed-cost-form">
+              <label>
+                <span>名前</span>
+                <input id="fixedNameInput" type="text" maxlength="24" placeholder="例: 家賃">
+              </label>
+              <label>
+                <span>金額</span>
+                <input id="fixedAmountInput" type="text" inputmode="numeric" pattern="[0-9０-９,，]*" placeholder="0">
+              </label>
+              <div class="fixed-cost-row">
+                <label>
+                  <span>日付</span>
+                  <select id="fixedDayInput"></select>
+                </label>
+                <label>
+                  <span>カテゴリ</span>
+                  <select id="fixedCategoryInput"></select>
+                </label>
+              </div>
+              <button class="ghost-button" id="addFixedCost" type="button">固定費を追加</button>
+            </div>
+            <div class="fixed-cost-list" id="fixedCostList"></div>
+          </div>
+          <div class="settings-panel">
+            <h3>バックアップ</h3>
+            <button class="ghost-button" id="exportData" type="button">家計簿データを保存</button>
+            <button class="ghost-button backup-import" id="restoreData" type="button">保存したデータから復元</button>
+            <input id="importData" class="hidden-input" type="file" accept="application/json">
+          </div>
+        </section>
+      </main>
+
+      <nav class="bottom-nav" aria-label="主要ナビゲーション">
+        <button class="is-active" type="button" data-nav="home"><span>⌂</span>ホーム</button>
+        <button type="button" data-nav="add"><span>＋</span>追加</button>
+        <button type="button" data-nav="calendar"><span>▦</span>日付</button>
+        <button type="button" data-nav="chart"><span>◔</span>分析</button>
+        <button type="button" data-nav="search"><span>⌕</span>検索</button>
+        <button type="button" data-nav="settings"><span>⚙</span>設定</button>
+      </nav>
+    </div>
+
+    <dialog id="receiptDialog" class="receipt-dialog">
+      <form method="dialog" class="dialog-content">
+        <div class="section-title">
+          <h2>レシート確認</h2>
+          <button class="icon-button" value="close" aria-label="閉じる" title="閉じる">×</button>
+        </div>
+        <div class="receipt-actions">
+          <button class="ghost-button" id="takeReceiptPhoto" type="button">カメラで撮影</button>
+          <button class="ghost-button" id="chooseReceiptPhoto" type="button">写真から選ぶ</button>
+        </div>
+        <input id="receiptCameraInput" class="hidden-input" type="file" accept="image/*" capture="environment">
+        <input id="receiptImage" class="hidden-input" type="file" accept="image/*">
+        <img id="receiptPreview" alt="レシートのプレビュー">
+        <div class="receipt-review" id="receiptReview" hidden>
+          <button class="ghost-button" id="retakeReceipt" type="button">撮り直す</button>
+          <button class="ghost-button" id="useReceiptPhoto" type="button">この写真を使う</button>
+        </div>
+        <div class="receipt-fields" id="receiptFields" hidden>
+          <label>
+            <span>読み取りテキスト</span>
+            <textarea id="receiptText" rows="5" placeholder="レシートの合計や日付が読めたらここに貼り付けます。写真を見ながら手入力して確認できます。"></textarea>
+          </label>
+          <button class="ghost-button" id="parseReceipt" type="button">候補を作る</button>
+          <div class="receipt-candidate" id="receiptCandidate"></div>
+          <div class="receipt-edit" id="receiptEdit" hidden>
+            <label>
+              <span>金額</span>
+              <input id="receiptAmountInput" type="text" inputmode="numeric" pattern="[0-9０-９,，]*">
+            </label>
+            <div class="receipt-edit-row">
+              <label>
+                <span>日付</span>
+                <input id="receiptDateInput" type="date">
+              </label>
+              <label>
+                <span>カテゴリ</span>
+                <select id="receiptCategoryInput"></select>
+              </label>
+            </div>
+            <label>
+              <span>メモ</span>
+              <input id="receiptMemoInput" type="text" maxlength="120">
+            </label>
+          </div>
+          <button class="primary-button" id="applyReceipt" type="button">確認して追加</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
