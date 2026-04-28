@@ -1504,6 +1504,8 @@ function openReceiptDialog() {
   $("#receiptImage").value = "";
   $("#receiptText").value = "";
   $("#receiptOcrStatus").textContent = "";
+  $("#receiptAmountCandidates").hidden = true;
+  $("#receiptAmountCandidates").innerHTML = "";
   $("#receiptCandidate").style.display = "none";
   $("#receiptPreview").style.display = "none";
   $("#receiptReview").hidden = true;
@@ -1544,7 +1546,8 @@ async function showReceiptFields() {
 
 function parseReceipt() {
   const text = $("#receiptText").value;
-  const amount = extractReceiptAmount(text);
+  const amountInfo = extractReceiptAmount(text);
+  const amount = amountInfo.amount;
   const date = extractReceiptDate(text) || toDateInput(new Date());
 
   if (!amount) {
@@ -1555,6 +1558,7 @@ function parseReceipt() {
   state.receiptCandidate = {
     type: "expense",
     amount,
+    amountCandidates: amountInfo.candidates,
     date,
     category: "食費",
     memo: "レシートから追加"
@@ -1619,27 +1623,49 @@ function setReceiptOcrStatus(message) {
 }
 
 function extractReceiptAmount(text) {
+  const candidates = extractReceiptAmountCandidates(text);
+  return {
+    amount: candidates[0]?.amount || 0,
+    candidates
+  };
+}
+
+function extractReceiptAmountCandidates(text) {
   const lines = text.split(/\r?\n/).map((line) => normalizeReceiptText(line)).filter(Boolean);
-  const prioritized = [];
-  const fallback = [];
+  const candidateMap = new Map();
 
   lines.forEach((line) => {
     const values = [...line.matchAll(/[¥￥]?\s*([0-9][0-9,]{0,8})\s*円?/g)]
       .map((match) => Number(match[1].replace(/,/g, "")))
-      .filter((value) => Number.isFinite(value) && value > 0);
+      .filter((value) => Number.isFinite(value) && value >= 10);
     if (!values.length) return;
 
-    const hasTotalLabel = /(合計|総計|税込|お買上|請求|支払|小計)/.test(line);
+    const totalMatch = line.match(/(合計|総計|税込|お買上|請求|支払|小計)/);
+    const hasTotalLabel = Boolean(totalMatch);
     const ignoreLine = /(釣銭|お釣|つり銭|預り|預かり|現金|合算|対象|税率|点数|No\.?|TEL|電話)/i.test(line);
     const dateLine = /\d{2,4}[\/.\-年]\s*\d{1,2}[\/.\-月]\s*\d{1,2}/.test(line);
     values.forEach((value) => {
-      if (hasTotalLabel && !ignoreLine) prioritized.push(value);
-      if (!ignoreLine && !dateLine) fallback.push(value);
+      if (dateLine) return;
+      const current = candidateMap.get(value) || { amount: value, label: "", score: 0 };
+      let score = 1;
+      let label = "数字候補";
+      if (hasTotalLabel && !ignoreLine) {
+        score = 100;
+        label = `${totalMatch[1]}の候補`;
+      } else if (!ignoreLine) {
+        score = value >= 100 ? 8 : 3;
+        label = "金額候補";
+      } else {
+        score = 0;
+      }
+      if (score > current.score) candidateMap.set(value, { amount: value, label, score });
     });
   });
 
-  const candidates = prioritized.length ? prioritized : fallback;
-  return candidates.length ? Math.max(...candidates) : 0;
+  return [...candidateMap.values()]
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score || b.amount - a.amount)
+    .slice(0, 6);
 }
 
 function extractReceiptDate(text) {
@@ -1677,12 +1703,37 @@ function renderReceiptCandidateForm() {
     内容を確認し、必要なら下で修正して追加します。
   `;
   $("#receiptAmountInput").value = candidate.amount;
+  renderReceiptAmountCandidates(candidate.amountCandidates || []);
   setReceiptDate(candidate.date);
   renderReceiptDatePicker();
   $("#receiptCategoryInput").value = candidate.category;
   $("#receiptMemoInput").value = candidate.memo;
   $("#receiptEdit").hidden = false;
   renderCustomSelect("receiptCategoryInput");
+}
+
+function renderReceiptAmountCandidates(candidates) {
+  const wrap = $("#receiptAmountCandidates");
+  if (!candidates.length) {
+    wrap.hidden = true;
+    wrap.innerHTML = "";
+    return;
+  }
+
+  wrap.hidden = false;
+  wrap.innerHTML = candidates.map((item, index) => `
+    <button class="${index === 0 ? "is-primary" : ""}" type="button" data-receipt-amount="${item.amount}">
+      <span>${escapeHtml(item.label)}</span>
+      <strong>${formatCalendarAmount(item.amount)}円</strong>
+    </button>
+  `).join("");
+
+  wrap.querySelectorAll("[data-receipt-amount]").forEach((button) => {
+    button.addEventListener("click", () => {
+      $("#receiptAmountInput").value = button.dataset.receiptAmount;
+      wrap.querySelectorAll("button").forEach((target) => target.classList.toggle("is-primary", target === button));
+    });
+  });
 }
 
 function applyReceipt() {

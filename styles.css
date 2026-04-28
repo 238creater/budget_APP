@@ -1921,6 +1921,46 @@ button.legend-row {
   font-size: 15px;
 }
 
+.receipt-amount-candidates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.receipt-amount-candidates[hidden] {
+  display: none;
+}
+
+.receipt-amount-candidates button {
+  display: grid;
+  gap: 2px;
+  min-height: 42px;
+  padding: 7px 10px;
+  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  box-shadow: var(--soft-shadow);
+}
+
+.receipt-amount-candidates button span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.receipt-amount-candidates button strong {
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.receipt-amount-candidates button.is-primary {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: var(--accent);
+}
+
 .receipt-edit .custom-select {
   min-width: 0;
 }
@@ -1960,13 +2000,18 @@ button.legend-row {
 }
 
 .receipt-date-picker .date-picker-button {
+  width: 100%;
+  min-width: 0;
   min-height: 46px;
-  padding: 9px 12px;
+  padding: 9px 10px;
   border-radius: 14px;
 }
 
 .receipt-date-picker .date-picker-button strong {
+  overflow: hidden;
   font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .receipt-date-picker .date-picker-button span {
@@ -2027,11 +2072,30 @@ button.legend-row {
   align-items: start;
 }
 
+.receipt-edit-row label {
+  min-width: 0;
+}
+
 @media (max-width: 380px) {
   .search-filters,
-  .receipt-edit-row,
   .fixed-cost-row {
     grid-template-columns: 1fr;
+  }
+
+  .receipt-edit-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .receipt-date-picker .date-picker-button,
+  .receipt-edit .custom-select-button {
+    min-height: 44px;
+    padding-inline: 8px;
+  }
+
+  .receipt-date-picker .date-picker-button strong,
+  .receipt-edit .custom-select-button {
+    font-size: 13px;
   }
 }
 
