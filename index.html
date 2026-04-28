@@ -303,7 +303,22 @@
             <div class="receipt-edit-row">
               <label>
                 <span>日付</span>
-                <input id="receiptDateInput" type="date">
+                <div class="date-picker-wrap receipt-date-picker" id="receiptDatePickerWrap">
+                  <button class="date-picker-button" id="receiptDatePickerButton" type="button" aria-expanded="false">
+                    <strong id="receiptDatePickerLabel"></strong>
+                    <span>日付を選択</span>
+                  </button>
+                  <input id="receiptDateInput" type="hidden">
+                  <div class="date-picker-panel receipt-date-picker-panel" id="receiptDatePickerPanel" hidden>
+                    <div class="date-picker-head">
+                      <button class="icon-button" id="receiptDatePickerPrev" type="button" aria-label="前の月" title="前の月">‹</button>
+                      <strong id="receiptDatePickerMonthLabel"></strong>
+                      <button class="icon-button" id="receiptDatePickerNext" type="button" aria-label="次の月" title="次の月">›</button>
+                    </div>
+                    <button class="today-mini-button" id="receiptDatePickerToday" type="button">今日へ移動</button>
+                    <div class="date-picker-grid" id="receiptDatePickerGrid"></div>
+                  </div>
+                </div>
               </label>
               <label>
                 <span>カテゴリ</span>

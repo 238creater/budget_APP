@@ -41,6 +41,7 @@ const state = {
   chartWeekPickerMonth: null,
   entryDate: toDateInput(new Date()),
   entryPickerMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+  receiptPickerMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   selectedDay: toDateInput(new Date()),
   pickerYear: new Date().getFullYear(),
   homeCalendarOpen: false,
@@ -348,6 +349,13 @@ function bindEvents() {
     setEntryDate(toDateInput(new Date()));
     renderEntryDatePicker();
   });
+  $("#receiptDatePickerButton").addEventListener("click", toggleReceiptDatePicker);
+  $("#receiptDatePickerPrev").addEventListener("click", () => changeReceiptPickerMonth(-1));
+  $("#receiptDatePickerNext").addEventListener("click", () => changeReceiptPickerMonth(1));
+  $("#receiptDatePickerToday").addEventListener("click", () => {
+    setReceiptDate(toDateInput(new Date()));
+    renderReceiptDatePicker();
+  });
   $("#calendarMonthButton").addEventListener("click", toggleMonthPicker);
   $("#pickerPrevYear").addEventListener("click", () => changePickerYear(-1));
   $("#pickerNextYear").addEventListener("click", () => changePickerYear(1));
@@ -355,6 +363,7 @@ function bindEvents() {
   document.addEventListener("click", (event) => {
     if (!$("#calendarMonthPicker").contains(event.target)) closeMonthPicker();
     if (!$("#datePickerWrap").contains(event.target)) closeEntryDatePicker();
+    if (!$("#receiptDatePickerWrap").contains(event.target)) closeReceiptDatePicker();
     if (!$("#chartPicker").contains(event.target)) closeChartPicker();
     if (!$("#view-home .month-card").contains(event.target)) closeHomeCalendar();
     if (!event.target.closest(".custom-select")) closeCustomSelects();
@@ -718,6 +727,36 @@ function selectEntryDate(iso) {
   closeEntryDatePicker();
 }
 
+function setReceiptDate(iso) {
+  $("#receiptDateInput").value = iso;
+  $("#receiptDatePickerLabel").textContent = formatDate(iso);
+  const date = new Date(`${iso}T00:00:00`);
+  state.receiptPickerMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function toggleReceiptDatePicker() {
+  const panel = $("#receiptDatePickerPanel");
+  const willOpen = panel.hidden;
+  panel.hidden = !willOpen;
+  $("#receiptDatePickerButton").setAttribute("aria-expanded", String(willOpen));
+  if (willOpen) renderReceiptDatePicker();
+}
+
+function closeReceiptDatePicker() {
+  $("#receiptDatePickerPanel").hidden = true;
+  $("#receiptDatePickerButton").setAttribute("aria-expanded", "false");
+}
+
+function changeReceiptPickerMonth(delta) {
+  state.receiptPickerMonth = new Date(state.receiptPickerMonth.getFullYear(), state.receiptPickerMonth.getMonth() + delta, 1);
+  renderReceiptDatePicker();
+}
+
+function selectReceiptDate(iso) {
+  setReceiptDate(iso);
+  closeReceiptDatePicker();
+}
+
 function toggleMonthPicker() {
   const panel = $("#calendarMonthPanel");
   const willOpen = panel.hidden;
@@ -1035,10 +1074,12 @@ function renderCalendar() {
     const incomeTotal = typeTotal(dayItems, "income");
     const expenseTotal = typeTotal(dayItems, "expense");
     const isOutsideMonth = date.getMonth() !== month;
+    const isToday = iso === toDateInput(new Date());
+    const hasEntry = incomeTotal || expenseTotal;
     days.push(`
-      <button class="day-cell ${isOutsideMonth ? "is-muted" : ""} ${iso === state.selectedDay ? "is-selected" : ""}" type="button" data-day="${iso}" ${isOutsideMonth ? "disabled" : ""}>
+      <button class="day-cell ${isOutsideMonth ? "is-muted" : ""} ${iso === state.selectedDay ? "is-selected" : ""} ${isToday ? "is-today" : ""} ${hasEntry ? "has-entry" : ""}" type="button" data-day="${iso}" ${isOutsideMonth ? "disabled" : ""}>
         <span class="day-num">${date.getDate()}</span>
-        ${(incomeTotal || expenseTotal) ? `
+        ${hasEntry ? `
           <span class="day-amounts">
             ${incomeTotal ? `<span class="day-total income ${calendarAmountClass(incomeTotal)}">${formatCalendarAmount(incomeTotal)}</span>` : ""}
             ${expenseTotal ? `<span class="day-total expense ${calendarAmountClass(expenseTotal)}">${formatCalendarAmount(expenseTotal)}</span>` : ""}
@@ -1086,6 +1127,38 @@ function renderEntryDatePicker() {
   $("#datePickerGrid").innerHTML = [...weekdays, ...days].join("");
   $$("[data-entry-date]").forEach((button) => {
     button.addEventListener("click", () => selectEntryDate(button.dataset.entryDate));
+  });
+}
+
+function renderReceiptDatePicker() {
+  const selectedDate = $("#receiptDateInput").value || toDateInput(new Date());
+  const year = state.receiptPickerMonth.getFullYear();
+  const month = state.receiptPickerMonth.getMonth();
+  const first = new Date(year, month, 1);
+  const start = new Date(year, month, 1 - first.getDay());
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const visibleDayCount = Math.ceil((first.getDay() + daysInMonth) / 7) * 7;
+  const weekdays = ["日", "月", "火", "水", "木", "金", "土"].map((day) => `<div class="weekday">${day}</div>`);
+  const days = [];
+
+  $("#receiptDatePickerMonthLabel").textContent = `${year}年 ${month + 1}月`;
+  $("#receiptDatePickerLabel").textContent = formatDate(selectedDate);
+
+  for (let index = 0; index < visibleDayCount; index += 1) {
+    const date = new Date(start.getFullYear(), start.getMonth(), start.getDate() + index);
+    const iso = toDateInput(date);
+    const isOutsideMonth = date.getMonth() !== month;
+    const isToday = iso === toDateInput(new Date());
+    days.push(`
+      <button class="day-cell ${isOutsideMonth ? "is-muted" : ""} ${iso === selectedDate ? "is-selected" : ""} ${isToday ? "is-today" : ""}" type="button" data-receipt-date="${iso}" ${isOutsideMonth ? "disabled" : ""}>
+        <span class="day-num">${date.getDate()}</span>
+      </button>
+    `);
+  }
+
+  $("#receiptDatePickerGrid").innerHTML = [...weekdays, ...days].join("");
+  $$("[data-receipt-date]").forEach((button) => {
+    button.addEventListener("click", () => selectReceiptDate(button.dataset.receiptDate));
   });
 }
 
@@ -1436,6 +1509,8 @@ function openReceiptDialog() {
   $("#receiptReview").hidden = true;
   $("#receiptFields").hidden = true;
   $("#receiptEdit").hidden = true;
+  setReceiptDate(toDateInput(new Date()));
+  closeReceiptDatePicker();
   $("#receiptDialog").showModal();
 }
 
@@ -1602,7 +1677,8 @@ function renderReceiptCandidateForm() {
     内容を確認し、必要なら下で修正して追加します。
   `;
   $("#receiptAmountInput").value = candidate.amount;
-  $("#receiptDateInput").value = candidate.date;
+  setReceiptDate(candidate.date);
+  renderReceiptDatePicker();
   $("#receiptCategoryInput").value = candidate.category;
   $("#receiptMemoInput").value = candidate.memo;
   $("#receiptEdit").hidden = false;
