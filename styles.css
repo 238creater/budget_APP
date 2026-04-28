@@ -1874,6 +1874,13 @@ button.legend-row {
   gap: 13px;
 }
 
+.receipt-ocr-status {
+  min-height: 20px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 750;
+}
+
 .receipt-edit {
   display: grid;
   gap: 10px;

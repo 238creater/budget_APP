@@ -292,6 +292,7 @@
             <span>読み取りテキスト</span>
             <textarea id="receiptText" rows="5" placeholder="レシートの合計や日付が読めたらここに貼り付けます。写真を見ながら手入力して確認できます。"></textarea>
           </label>
+          <div class="receipt-ocr-status" id="receiptOcrStatus" role="status" aria-live="polite"></div>
           <button class="ghost-button" id="parseReceipt" type="button">候補を作る</button>
           <div class="receipt-candidate" id="receiptCandidate"></div>
           <div class="receipt-edit" id="receiptEdit" hidden>

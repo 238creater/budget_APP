@@ -49,6 +49,8 @@ const state = {
   searchType: "all",
   searchCategory: "all",
   receiptCandidate: null,
+  receiptFile: null,
+  receiptOcrLoading: false,
   data: loadData()
 };
 
@@ -1423,9 +1425,12 @@ function fallbackCategoryColor(category, type = "expense") {
 
 function openReceiptDialog() {
   state.receiptCandidate = null;
+  state.receiptFile = null;
+  state.receiptOcrLoading = false;
   $("#receiptCameraInput").value = "";
   $("#receiptImage").value = "";
   $("#receiptText").value = "";
+  $("#receiptOcrStatus").textContent = "";
   $("#receiptCandidate").style.display = "none";
   $("#receiptPreview").style.display = "none";
   $("#receiptReview").hidden = true;
@@ -1444,29 +1449,28 @@ function previewReceipt(event) {
   const file = event.target.files?.[0];
   if (!file) return;
   const preview = $("#receiptPreview");
+  state.receiptFile = file;
   preview.src = URL.createObjectURL(file);
   preview.style.display = "block";
   $("#receiptReview").hidden = false;
   $("#receiptFields").hidden = true;
   $("#receiptCandidate").style.display = "none";
   $("#receiptEdit").hidden = true;
+  $("#receiptText").value = "";
+  $("#receiptOcrStatus").textContent = "";
   state.receiptCandidate = null;
 }
 
-function showReceiptFields() {
+async function showReceiptFields() {
   $("#receiptFields").hidden = false;
+  if (!state.receiptFile || $("#receiptText").value.trim()) return;
+  await readReceiptImage();
 }
 
 function parseReceipt() {
   const text = $("#receiptText").value;
-  const amountMatches = [...text.matchAll(/(?:合計|総計|税込|計)?\s*[¥￥]?\s*([0-9０-９,，]{3,})/g)]
-    .map((match) => Number(match[1].replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 65248)).replace(/[,，]/g, "")))
-    .filter(Boolean);
-  const dateMatch = text.match(/(20\d{2})[\/.-年]\s*(\d{1,2})[\/.-月]\s*(\d{1,2})/);
-  const amount = amountMatches.length ? Math.max(...amountMatches) : 0;
-  const date = dateMatch
-    ? `${dateMatch[1]}-${dateMatch[2].padStart(2, "0")}-${dateMatch[3].padStart(2, "0")}`
-    : toDateInput(new Date());
+  const amount = extractReceiptAmount(text);
+  const date = extractReceiptDate(text) || toDateInput(new Date());
 
   if (!amount) {
     showToast("合計金額を読み取れませんでした。テキストに金額を入れてください");
@@ -1484,6 +1488,111 @@ function parseReceipt() {
   renderReceiptCandidateForm();
 }
 
+async function readReceiptImage() {
+  if (state.receiptOcrLoading) return;
+  state.receiptOcrLoading = true;
+  setReceiptOcrStatus("画像から文字を読み取っています...");
+  try {
+    const Tesseract = await loadTesseract();
+    const result = await Tesseract.recognize(state.receiptFile, "jpn+eng", {
+      logger: ({ status, progress }) => {
+        if (status === "recognizing text") {
+          setReceiptOcrStatus(`画像から文字を読み取っています... ${Math.round(progress * 100)}%`);
+        }
+      }
+    });
+    const text = result?.data?.text?.trim() || "";
+    if (!text) {
+      setReceiptOcrStatus("文字を読み取れませんでした。写真を見ながら入力してください。");
+      return;
+    }
+    $("#receiptText").value = text;
+    setReceiptOcrStatus("読み取りました。内容を確認して候補を作ってください。");
+    parseReceipt();
+  } catch (error) {
+    console.error(error);
+    setReceiptOcrStatus("OCRを読み込めませんでした。ネット接続を確認するか、手入力してください。");
+  } finally {
+    state.receiptOcrLoading = false;
+  }
+}
+
+function loadTesseract() {
+  if (globalThis.Tesseract) return Promise.resolve(globalThis.Tesseract);
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector("script[data-tesseract]");
+    if (existing) {
+      existing.addEventListener("load", () => resolve(globalThis.Tesseract), { once: true });
+      existing.addEventListener("error", reject, { once: true });
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+    script.async = true;
+    script.dataset.tesseract = "true";
+    script.addEventListener("load", () => {
+      if (globalThis.Tesseract) resolve(globalThis.Tesseract);
+      else reject(new Error("Tesseract failed to load"));
+    }, { once: true });
+    script.addEventListener("error", reject, { once: true });
+    document.head.appendChild(script);
+  });
+}
+
+function setReceiptOcrStatus(message) {
+  $("#receiptOcrStatus").textContent = message;
+}
+
+function extractReceiptAmount(text) {
+  const lines = text.split(/\r?\n/).map((line) => normalizeReceiptText(line)).filter(Boolean);
+  const prioritized = [];
+  const fallback = [];
+
+  lines.forEach((line) => {
+    const values = [...line.matchAll(/[¥￥]?\s*([0-9][0-9,]{0,8})\s*円?/g)]
+      .map((match) => Number(match[1].replace(/,/g, "")))
+      .filter((value) => Number.isFinite(value) && value > 0);
+    if (!values.length) return;
+
+    const hasTotalLabel = /(合計|総計|税込|お買上|請求|支払|小計)/.test(line);
+    const ignoreLine = /(釣銭|お釣|つり銭|預り|預かり|現金|合算|対象|税率|点数|No\.?|TEL|電話)/i.test(line);
+    const dateLine = /\d{2,4}[\/.\-年]\s*\d{1,2}[\/.\-月]\s*\d{1,2}/.test(line);
+    values.forEach((value) => {
+      if (hasTotalLabel && !ignoreLine) prioritized.push(value);
+      if (!ignoreLine && !dateLine) fallback.push(value);
+    });
+  });
+
+  const candidates = prioritized.length ? prioritized : fallback;
+  return candidates.length ? Math.max(...candidates) : 0;
+}
+
+function extractReceiptDate(text) {
+  const normalized = normalizeReceiptText(text);
+  const match = normalized.match(/(?:^|\D)(20\d{2}|\d{2})[\/.\-年]\s*(\d{1,2})[\/.\-月]\s*(\d{1,2})/);
+  if (!match) return "";
+
+  const currentYear = new Date().getFullYear();
+  let year = Number(match[1]);
+  if (year < 100) year += year > currentYear % 100 + 1 ? 1900 : 2000;
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(year, month - 1, day);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return "";
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function normalizeReceiptText(value) {
+  return String(value || "")
+    .replace(/[０-９]/g, (char) => String.fromCharCode(char.charCodeAt(0) - 65248))
+    .replace(/[，、]/g, ",")
+    .replace(/[／]/g, "/")
+    .replace(/[．]/g, ".")
+    .replace(/[ー－]/g, "-")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function renderReceiptCandidateForm() {
   const candidate = state.receiptCandidate;
   if (!candidate) return;
@@ -1497,6 +1606,7 @@ function renderReceiptCandidateForm() {
   $("#receiptCategoryInput").value = candidate.category;
   $("#receiptMemoInput").value = candidate.memo;
   $("#receiptEdit").hidden = false;
+  renderCustomSelect("receiptCategoryInput");
 }
 
 function applyReceipt() {
