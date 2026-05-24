@@ -1,573 +1,342 @@
 <!doctype html>
 <html lang="ja">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Word Deck</title>
-    <link rel="stylesheet" href="styles.css?v=20260522-63" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>家計簿アプリ</title>
+    <link rel="stylesheet" href="styles.css">
   </head>
   <body>
-    <main class="app-shell">
-      <section id="deck-screen" class="screen is-active" aria-labelledby="deck-title">
-        <header class="topbar">
-          <div>
-            <p class="eyebrow">Word Deck</p>
-            <h1 id="deck-title">単語帳</h1>
-          </div>
-          <label class="icon-button file-button" title="CSVを取り込む">
-            <span>＋</span>
-            <input id="csv-input" type="file" accept=".csv,text/csv" />
-          </label>
-        </header>
-
-        <div class="import-panel">
-          <div>
-            <h2>CSVインポート</h2>
-            <p>単語帳は <code>lesson, english, japanese</code>。穴埋め問題は <code>stage, question_english, question_japanese, choices, answer, explanation</code> の列名で取り込めます。</p>
-          </div>
-          <div class="import-actions">
-            <button id="load-sample-button" class="secondary-button">単語サンプル</button>
-            <button id="load-cloze-sample-button" class="secondary-button">穴埋めサンプル</button>
-          </div>
-        </div>
-
-        <div id="deck-list" class="deck-list"></div>
-      </section>
-
-      <section id="setup-screen" class="screen" aria-labelledby="setup-title">
-        <header class="topbar compact">
-          <button class="icon-button" data-action="back-to-decks" title="単語帳選択へ戻る" aria-label="単語帳選択へ戻る">←</button>
-          <div class="topbar-title">
-            <p id="active-deck-name" class="eyebrow"></p>
-            <h1 id="setup-title">ホーム</h1>
-          </div>
-        </header>
-
-        <div class="settings-grid">
-          <section class="settings-block">
-            <h2>モード</h2>
-            <div id="mode-options" class="option-grid"></div>
-          </section>
-
-          <section class="settings-block">
-            <h2>出題範囲</h2>
-            <div class="range-summary-card">
-              <div>
-                <p class="eyebrow">Selected range</p>
-                <strong id="range-summary-title">読み込み中</strong>
-                <p id="range-summary-detail"></p>
-              </div>
-              <button id="open-range-dialog-button" class="secondary-button" type="button">範囲を変更</button>
-            </div>
-          </section>
-
-          <section class="settings-block">
-            <h2>出題数</h2>
-            <div id="count-options" class="count-grid"></div>
-          </section>
-
-          <section class="settings-block preset-panel">
-            <h2>学習プリセット</h2>
-            <div class="preset-grid">
-              <button class="secondary-button small" type="button" data-preset="standard">通常練習</button>
-              <button class="secondary-button small" type="button" data-preset="speed">速答練習</button>
-              <button class="secondary-button small" type="button" data-preset="review">苦手復習</button>
-              <button id="favorite-preset-menu-button" class="secondary-button small" type="button">お気に入り</button>
-            </div>
-          </section>
-
-          <section class="settings-block">
-            <h2>制限時間</h2>
-            <div id="time-options" class="time-grid"></div>
-          </section>
-
-          <section id="continue-panel" class="settings-block continue-panel is-hidden">
-            <div>
-              <h2>前回の続き</h2>
-              <p id="continue-detail"></p>
-            </div>
-            <div class="continue-actions">
-              <button id="continue-study-button" class="primary-button" type="button">続きから</button>
-              <button id="discard-progress-button" class="secondary-button" type="button">破棄</button>
-            </div>
-          </section>
-
-          <section class="settings-block start-panel">
-            <div class="start-copy">
-              <label class="challenge-toggle">
-                <input id="challenge-toggle" type="checkbox" />
-                <span>
-                  <strong>チャレンジモード</strong>
-                  <small>間違えたらその場で終了。エンドレスは使えません。</small>
-                </span>
-              </label>
-              <p id="start-note" class="start-note"></p>
-            </div>
-            <button id="start-button" class="primary-button">開始</button>
-          </section>
-        </div>
-
-      </section>
-
-      <section id="detail-settings-screen" class="screen" aria-labelledby="detail-settings-title">
-        <header class="topbar compact">
-          <button class="icon-button" data-action="back-to-decks" title="単語帳選択へ戻る" aria-label="単語帳選択へ戻る">←</button>
-          <div class="topbar-title">
-            <p id="detail-deck-name" class="eyebrow"></p>
-            <h1 id="detail-settings-title">詳細設定</h1>
-          </div>
-        </header>
-
-        <div class="settings-grid detail-settings-grid">
-          <section class="settings-block bookmark-panel">
-            <div class="bookmark-panel-head">
-              <div>
-                <h2>復習セット</h2>
-                <p><strong id="bookmark-count">0</strong> 語を選択中</p>
-              </div>
-              <div class="bookmark-panel-actions">
-                <button id="bookmark-filter-button" class="secondary-button small" type="button">しおり</button>
-                <button id="recent-mistake-filter-button" class="secondary-button small" type="button">最近ミス</button>
-                <button id="smart-weak-filter-button" class="secondary-button small" type="button">苦手のみ</button>
-              </div>
-              <button id="bookmark-list-toggle" class="secondary-button small bookmark-list-open-button" type="button">復習一覧を見る</button>
-            </div>
-          </section>
-
-          <section class="settings-block">
-            <h2>出題方法</h2>
-            <div id="question-order-options" class="question-order-grid"></div>
-          </section>
-
-          <section class="settings-block data-management-panel">
-            <h2>復習データ管理</h2>
-            <div class="data-management-grid">
-              <button id="reset-learning-button" class="secondary-button small" type="button">おまかせをリセット</button>
-              <button id="reset-recent-mistakes-button" class="secondary-button small" type="button">最近ミスをリセット</button>
-              <button id="reset-study-record-button" class="secondary-button small" type="button">学習記録をリセット</button>
-              <button id="detail-clear-bookmarks-button" class="secondary-button small" type="button">しおりを一括解除</button>
-            </div>
-          </section>
-
-          <section class="settings-block favorite-preset-panel">
-            <h2>お気に入りプリセット</h2>
-            <div class="favorite-preset-form">
-              <input id="favorite-preset-name" type="text" maxlength="18" placeholder="例: 朝の10問" />
-              <button id="save-favorite-preset-button" class="secondary-button small" type="button">今の設定を保存</button>
-            </div>
-            <div id="favorite-preset-list" class="favorite-preset-list"></div>
-          </section>
-
-          <section class="settings-block goal-settings-panel">
-            <h2>今日の目標</h2>
-            <div id="goal-options" class="goal-options"></div>
-          </section>
-
-          <section class="settings-block after-study-panel">
-            <h2>学習後の動作</h2>
-            <div class="preference-list">
-              <label class="setting-toggle">
-                <input id="show-cloze-japanese-toggle" type="checkbox" />
-                <span>
-                  <strong>穴埋め問題で日本語訳を表示</strong>
-                  <small>オフにすると、学習中は英文穴埋めだけを表示します。</small>
-                </span>
-              </label>
-              <label class="setting-toggle">
-                <input id="cloze-initial-hint-toggle" type="checkbox" />
-                <span>
-                  <strong>記述穴埋めで頭文字ヒントを表示</strong>
-                  <small>答えの最初の文字だけをヒントとして表示します。</small>
-                </span>
-              </label>
-              <label class="setting-toggle">
-                <input id="auto-bookmark-wrong-toggle" type="checkbox" />
-                <span>
-                  <strong>間違えた項目を自動でしおりに追加</strong>
-                  <small>通常モードの結果表示時に、間違えた単語や問題をまとめて登録します。</small>
-                </span>
-              </label>
-              <label class="setting-toggle">
-                <input id="auto-bookmark-challenge-toggle" type="checkbox" />
-                <span>
-                  <strong>チャレンジ失敗時の項目を自動でしおりに追加</strong>
-                  <small>失敗した1語または1問だけを登録します。</small>
-                </span>
-              </label>
-              <label class="setting-toggle">
-                <input id="include-timeout-recent-toggle" type="checkbox" />
-                <span>
-                  <strong>時間切れを最近ミスに含める</strong>
-                  <small>オフにすると、時間切れだけの項目は最近ミスから外します。</small>
-                </span>
-              </label>
-            </div>
-          </section>
-
-        </div>
-      </section>
-
-      <section id="learning-record-screen" class="screen" aria-labelledby="learning-record-title">
-        <header class="topbar compact">
-          <button class="icon-button" data-action="back-to-decks" title="単語帳選択へ戻る" aria-label="単語帳選択へ戻る">←</button>
-          <div class="topbar-title">
-            <p id="learning-record-deck-name" class="eyebrow"></p>
-            <h1 id="learning-record-title">学習記録</h1>
-          </div>
-        </header>
-
-        <div class="settings-grid learning-record-grid">
-          <section class="settings-block">
-            <div class="record-section-head">
-              <h2>今日の学習</h2>
-              <button id="open-study-history-button" class="secondary-button small" type="button">履歴を見る</button>
-            </div>
-            <div id="record-goal-panel" class="goal-record-panel">
-              <div>
-                <strong id="record-goal-label">目標 50問</strong>
-                <span id="record-goal-detail">0問 / 50問</span>
-              </div>
-              <div class="goal-progress-track" aria-hidden="true">
-                <div id="record-goal-progress" class="goal-progress-fill"></div>
-              </div>
-            </div>
-            <div class="record-summary">
-              <div>
-                <span id="record-today-answered">0</span>
-                <p>回答</p>
-              </div>
-              <div>
-                <span id="record-today-correct">0</span>
-                <p>正解</p>
-              </div>
-              <div>
-                <span id="record-today-accuracy">0%</span>
-                <p>正答率</p>
-              </div>
-              <div>
-                <span id="record-streak-days">0日</span>
-                <p>連続学習</p>
-              </div>
-            </div>
-          </section>
-
-          <section class="settings-block">
-            <div class="weakness-summary-head">
-              <h2>弱点サマリー</h2>
-              <div class="weakness-summary-tabs">
-                <button id="weakness-category-tab" class="secondary-button small is-selected" type="button">分野別</button>
-                <button id="weakness-problem-tab" class="secondary-button small" type="button">問題別</button>
-              </div>
-            </div>
-            <div id="weakness-summary-list" class="weakness-summary-list"></div>
-          </section>
-        </div>
-      </section>
-
-      <div id="floating-start-bar" class="floating-start-bar" aria-hidden="true">
+    <div class="app-shell">
+      <header class="topbar">
         <div>
-          <strong id="floating-start-title">開始できます</strong>
-          <span id="floating-start-detail">選択範囲 0語</span>
+          <p class="eyebrow">Smart Budget</p>
+          <h1>家計簿</h1>
         </div>
-        <button id="floating-start-button" class="primary-button small" type="button">開始</button>
-      </div>
+        <button class="icon-button" id="themeToggle" type="button" aria-label="テーマ切り替え" title="テーマ切り替え">
+          <span aria-hidden="true">◐</span>
+        </button>
+      </header>
 
-      <nav id="app-bottom-nav" class="app-bottom-nav" aria-label="アプリ内ナビゲーション">
-        <div class="app-nav-indicator" aria-hidden="true"></div>
-        <button class="app-nav-button" type="button" data-nav-screen="setup">
-          <span class="app-nav-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" focusable="false">
-              <path d="M3.8 10.4 12 3.7l8.2 6.7" />
-              <path d="M6.2 9.4v9.2c0 .9.6 1.5 1.5 1.5h8.6c.9 0 1.5-.6 1.5-1.5V9.4" />
-              <path d="M9.6 20.1v-5.4h4.8v5.4" />
-            </svg>
-          </span>
-          <strong>ホーム</strong>
-        </button>
-        <button id="bottom-word-list-button" class="app-nav-button" type="button" data-nav-screen="wordList">
-          <span class="app-nav-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" focusable="false">
-              <path d="M5.5 4.2h10.6c1.3 0 2.4 1.1 2.4 2.4v13.2H7.1a2.6 2.6 0 0 1-2.6-2.6V5.2c0-.6.4-1 1-1Z" />
-              <path d="M7.1 19.8a2.5 2.5 0 0 1 0-5h11.4" />
-              <path d="M8.2 8h6.4" />
-              <path d="M8.2 11h4.8" />
-            </svg>
-          </span>
-          <strong>単語一覧</strong>
-        </button>
-        <button class="app-nav-button" type="button" data-nav-screen="learningRecord">
-          <span class="app-nav-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" focusable="false">
-              <path d="M4.5 19.5h15" />
-              <path d="M6.5 16.5v-5" />
-              <path d="M12 16.5v-9" />
-              <path d="M17.5 16.5v-7" />
-              <path d="M6.6 6.8 10 4.9l3.8 2.4 3.4-2.8" />
-            </svg>
-          </span>
-          <strong>学習記録</strong>
-        </button>
-        <button class="app-nav-button" type="button" data-nav-screen="detailSettings">
-          <span class="app-nav-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" focusable="false">
-              <path d="M4.8 7.2h14.4" />
-              <path d="M4.8 16.8h14.4" />
-              <path d="M9.1 4.8v4.8" />
-              <path d="M14.9 14.4v4.8" />
-              <path d="M9.1 7.2h.1" />
-              <path d="M14.9 16.8h.1" />
-            </svg>
-          </span>
-          <strong>詳細設定</strong>
-        </button>
+      <main>
+        <section class="view is-active" id="view-home" aria-labelledby="homeTitle">
+          <div class="month-card">
+            <div class="month-controls">
+              <button class="icon-button" id="prevMonth" type="button" aria-label="前の月" title="前の月">‹</button>
+              <button class="month-title-button" id="homeMonthToggle" type="button" aria-expanded="false" aria-controls="homeCalendar">
+                <p class="eyebrow">表示月</p>
+                <span class="month-title-text" id="homeTitle"></span>
+              </button>
+              <button class="icon-button" id="nextMonth" type="button" aria-label="次の月" title="次の月">›</button>
+            </div>
+            <button class="today-mini-button home-today-button" id="homeTodayMonth" type="button">今月へ移動</button>
+            <div class="summary-grid">
+              <div>
+                <span>収入</span>
+                <strong id="totalIncome">¥0</strong>
+              </div>
+              <div>
+                <span>支出</span>
+                <strong id="totalExpense">¥0</strong>
+              </div>
+              <div>
+                <span>繰越残高</span>
+                <strong id="totalBalance">¥0</strong>
+              </div>
+            </div>
+            <div class="compact-calendar" id="homeCalendar"></div>
+          </div>
+
+          <div class="section-title">
+            <h2>最近の記録</h2>
+            <button class="text-button" data-nav="add" type="button">追加</button>
+          </div>
+          <div class="transaction-list" id="recentList"></div>
+        </section>
+
+        <section class="view" id="view-add" aria-labelledby="addTitle">
+          <div class="section-title">
+            <h2 id="addTitle">記録を追加</h2>
+          </div>
+
+          <form class="entry-form" id="entryForm">
+            <button class="receipt-cta" id="openReceipt" type="button">
+              <span class="receipt-cta-icon" aria-hidden="true">▤</span>
+              <span class="receipt-cta-copy">
+                <span>レシートから追加</span>
+                <strong>写真を使って支出候補を作る</strong>
+              </span>
+              <span class="receipt-cta-arrow" aria-hidden="true">›</span>
+            </button>
+
+            <div class="segmented" role="group" aria-label="種別">
+              <button class="is-selected" type="button" data-type="expense">支出</button>
+              <button type="button" data-type="income">収入</button>
+            </div>
+
+            <label>
+              <span>金額</span>
+              <input id="amountInput" type="text" inputmode="numeric" pattern="[0-9０-９,，]*" placeholder="0" autocomplete="off" required>
+            </label>
+
+            <div class="form-field">
+              <span>日付</span>
+              <div class="date-picker-wrap" id="datePickerWrap">
+                <button class="date-picker-button" id="datePickerButton" type="button" aria-expanded="false">
+                  <strong id="datePickerLabel"></strong>
+                  <span>日付を選択</span>
+                </button>
+                <input id="dateInput" type="hidden" required>
+                <div class="date-picker-panel" id="datePickerPanel" hidden>
+                  <div class="date-picker-head">
+                    <button class="icon-button" id="datePickerPrev" type="button" aria-label="前の月" title="前の月">‹</button>
+                    <strong id="datePickerMonthLabel"></strong>
+                    <button class="icon-button" id="datePickerNext" type="button" aria-label="次の月" title="次の月">›</button>
+                  </div>
+                  <button class="today-mini-button" id="datePickerToday" type="button">今日へ移動</button>
+                  <div class="date-picker-grid" id="datePickerGrid"></div>
+                </div>
+              </div>
+            </div>
+
+            <label>
+              <span>カテゴリ</span>
+              <select id="categoryInput" required></select>
+            </label>
+
+            <div class="inline-add">
+              <input id="newCategoryInput" type="text" maxlength="16" placeholder="カテゴリを追加">
+              <input id="newCategoryColor" class="color-input" type="color" value="#1f8a70" aria-label="カテゴリ色">
+              <button class="icon-button" id="addCategory" type="button" aria-label="カテゴリ追加" title="カテゴリ追加">＋</button>
+            </div>
+
+            <label>
+              <span>メモ</span>
+              <textarea id="memoInput" rows="3" maxlength="120" placeholder="例: スーパー、友人との食事"></textarea>
+            </label>
+
+            <button class="primary-button" type="submit">保存する</button>
+          </form>
+        </section>
+
+        <section class="view" id="view-calendar" aria-labelledby="calendarTitle">
+          <div class="section-title">
+            <h2 id="calendarTitle">カレンダー</h2>
+            <button class="text-button" id="todayButton" type="button">今月</button>
+          </div>
+          <div class="calendar-controls">
+            <button class="icon-button" id="calendarPrevMonth" type="button" aria-label="前の月" title="前の月">‹</button>
+            <div class="month-picker" id="calendarMonthPicker">
+              <button class="month-picker-button" id="calendarMonthButton" type="button" aria-expanded="false">
+                <span>年月を選択</span>
+                <strong id="calendarMonthLabel"></strong>
+              </button>
+              <div class="month-picker-panel" id="calendarMonthPanel" hidden>
+                <div class="year-selector">
+                  <button class="icon-button" id="pickerPrevYear" type="button" aria-label="前年" title="前年">‹</button>
+                  <button class="year-button" id="pickerYearButton" type="button"></button>
+                  <button class="icon-button" id="pickerNextYear" type="button" aria-label="翌年" title="翌年">›</button>
+                </div>
+                <div class="month-grid" id="pickerMonths"></div>
+              </div>
+            </div>
+            <button class="icon-button" id="calendarNextMonth" type="button" aria-label="次の月" title="次の月">›</button>
+          </div>
+          <div class="calendar" id="calendar"></div>
+          <div class="day-detail" id="dayDetail"></div>
+        </section>
+
+        <section class="view" id="view-chart" aria-labelledby="chartTitle">
+          <div class="section-title">
+            <h2 id="chartTitle">分析</h2>
+            <select class="small-select" id="chartType">
+              <option value="expense">支出</option>
+              <option value="income">収入</option>
+            </select>
+          </div>
+          <div class="segmented chart-period" role="group" aria-label="分析期間">
+            <button class="is-selected" type="button" data-chart-period="month">月</button>
+            <button type="button" data-chart-period="week">週</button>
+          </div>
+          <button class="today-mini-button chart-today-button" id="chartTodayPeriod" type="button">今月へ移動</button>
+          <div class="chart-month-controls">
+            <button class="icon-button" id="chartPrevMonth" type="button" aria-label="前の期間" title="前の期間">‹</button>
+            <div class="chart-picker" id="chartPicker">
+              <button class="chart-period-button" id="chartPeriodButton" type="button" aria-expanded="false">
+                <strong id="chartMonthLabel"></strong>
+                <span>期間を選択</span>
+              </button>
+              <div class="chart-picker-panel" id="chartPickerPanel" hidden></div>
+            </div>
+            <button class="icon-button" id="chartNextMonth" type="button" aria-label="次の期間" title="次の期間">›</button>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="categoryChart" width="320" height="320" aria-label="カテゴリ別割合"></canvas>
+            <div class="chart-center" id="chartCenter"></div>
+          </div>
+          <div class="legend" id="chartLegend"></div>
+          <div class="chart-detail" id="chartDetail"></div>
+          <div class="month-compare" id="monthCompare"></div>
+        </section>
+
+        <section class="view" id="view-search" aria-labelledby="searchTitle">
+          <div class="section-title">
+            <h2 id="searchTitle">検索</h2>
+          </div>
+          <div class="search-panel">
+            <label>
+              <span>キーワード</span>
+              <input id="searchInput" type="search" placeholder="メモ・カテゴリで検索">
+            </label>
+            <div class="search-filters">
+              <label>
+                <span>種別</span>
+                <select id="searchType">
+                  <option value="all">すべて</option>
+                  <option value="expense">支出</option>
+                  <option value="income">収入</option>
+                </select>
+              </label>
+              <label>
+                <span>カテゴリ</span>
+                <select id="searchCategory">
+                  <option value="all">すべて</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          <div class="search-summary" id="searchSummary"></div>
+          <div class="transaction-list" id="searchResults"></div>
+        </section>
+
+        <section class="view" id="view-settings" aria-labelledby="settingsTitle">
+          <div class="section-title">
+            <h2 id="settingsTitle">設定</h2>
+          </div>
+          <div class="settings-panel">
+            <h3>カテゴリ</h3>
+            <div class="segmented settings-type" role="group" aria-label="カテゴリ種別">
+              <button class="is-selected" type="button" data-settings-type="expense">支出</button>
+              <button type="button" data-settings-type="income">収入</button>
+            </div>
+            <div class="inline-add settings-add">
+              <input id="settingsCategoryInput" type="text" maxlength="16" placeholder="新しいカテゴリ">
+              <input id="settingsCategoryColor" class="color-input" type="color" value="#1f8a70" aria-label="カテゴリ色">
+              <button class="icon-button" id="settingsAddCategory" type="button" aria-label="カテゴリ追加" title="カテゴリ追加">＋</button>
+            </div>
+            <div id="categoryChips"></div>
+          </div>
+          <div class="settings-panel">
+            <h3>固定費</h3>
+            <div class="fixed-cost-form">
+              <label>
+                <span>名前</span>
+                <input id="fixedNameInput" type="text" maxlength="24" placeholder="例: 家賃">
+              </label>
+              <label>
+                <span>金額</span>
+                <input id="fixedAmountInput" type="text" inputmode="numeric" pattern="[0-9０-９,，]*" placeholder="0">
+              </label>
+              <div class="fixed-cost-row">
+                <label>
+                  <span>日付</span>
+                  <select id="fixedDayInput"></select>
+                </label>
+                <label>
+                  <span>カテゴリ</span>
+                  <select id="fixedCategoryInput"></select>
+                </label>
+              </div>
+              <button class="ghost-button" id="addFixedCost" type="button">固定費を追加</button>
+            </div>
+            <div class="fixed-cost-list" id="fixedCostList"></div>
+          </div>
+          <div class="settings-panel">
+            <h3>バックアップ</h3>
+            <button class="ghost-button" id="exportData" type="button">家計簿データを保存</button>
+            <button class="ghost-button backup-import" id="restoreData" type="button">保存したデータから復元</button>
+            <input id="importData" class="hidden-input" type="file" accept="application/json">
+          </div>
+        </section>
+      </main>
+
+      <nav class="bottom-nav" aria-label="主要ナビゲーション">
+        <button class="is-active" type="button" data-nav="home"><span>⌂</span>ホーム</button>
+        <button type="button" data-nav="add"><span>＋</span>追加</button>
+        <button type="button" data-nav="calendar"><span>▦</span>日付</button>
+        <button type="button" data-nav="chart"><span>◔</span>分析</button>
+        <button type="button" data-nav="search"><span>⌕</span>検索</button>
+        <button type="button" data-nav="settings"><span>⚙</span>設定</button>
       </nav>
+    </div>
 
-      <section id="word-list-screen" class="screen word-list-screen" aria-labelledby="word-list-title">
-        <header class="topbar compact word-list-topbar">
-          <button class="icon-button" data-action="back-to-decks" title="単語帳選択へ戻る" aria-label="単語帳選択へ戻る">←</button>
-          <div class="topbar-title">
-            <p id="word-list-deck-name" class="eyebrow"></p>
-            <h1 id="word-list-title">単語一覧</h1>
-          </div>
-          <button id="word-list-select-toggle" class="secondary-button small word-list-select-toggle" type="button">選択</button>
-        </header>
-
-        <div class="word-list-search">
-          <div class="word-search-field">
-            <input id="word-search-input" type="text" autocomplete="off" placeholder="英語・日本語で検索" />
-            <button id="clear-word-search-button" class="word-search-clear-button" type="button" aria-label="検索文字をクリア">×</button>
-          </div>
-          <button id="close-word-search-button" class="secondary-button small word-search-close-button" type="button">閉じる</button>
+    <dialog id="receiptDialog" class="receipt-dialog">
+      <form method="dialog" class="dialog-content">
+        <div class="section-title">
+          <h2>レシート確認</h2>
+          <button class="icon-button" value="close" aria-label="閉じる" title="閉じる">×</button>
         </div>
-        <div id="word-search-filters" class="word-search-filters is-hidden"></div>
-        <div id="word-list-selection-bar" class="word-list-selection-bar is-hidden" aria-live="polite">
-          <strong id="word-list-selection-count">0件選択中</strong>
-          <div>
-            <button id="word-list-bulk-bookmark-button" class="secondary-button small" type="button">まとめてしおり</button>
-            <button id="word-list-bulk-unbookmark-button" class="secondary-button small" type="button">まとめて解除</button>
-            <button id="word-list-clear-selection-button" class="secondary-button small" type="button">選択解除</button>
-          </div>
+        <div class="receipt-actions">
+          <button class="ghost-button" id="takeReceiptPhoto" type="button">カメラで撮影</button>
+          <button class="ghost-button" id="chooseReceiptPhoto" type="button">写真から選ぶ</button>
         </div>
-
-        <div id="word-detail-panel" class="dialog-backdrop is-hidden" role="dialog" aria-modal="true" aria-labelledby="word-detail-title">
-          <div class="dialog-panel word-detail-panel">
-            <div class="word-detail-panel-head">
-              <div>
-                <p id="word-detail-deck-name" class="eyebrow"></p>
-                <h2 id="word-detail-title">問題詳細</h2>
-              </div>
-              <button class="secondary-button small" data-action="close-word-detail" type="button">閉じる</button>
+        <input id="receiptCameraInput" class="hidden-input" type="file" accept="image/*" capture="environment">
+        <input id="receiptImage" class="hidden-input" type="file" accept="image/*">
+        <img id="receiptPreview" alt="レシートのプレビュー">
+        <div class="receipt-review" id="receiptReview" hidden>
+          <button class="ghost-button" id="retakeReceipt" type="button">撮り直す</button>
+          <button class="ghost-button" id="useReceiptPhoto" type="button">この写真を使う</button>
+        </div>
+        <div class="receipt-fields" id="receiptFields" hidden>
+          <label>
+            <span>読み取りテキスト</span>
+            <textarea id="receiptText" rows="5" placeholder="レシートの合計や日付が読めたらここに貼り付けます。写真を見ながら手入力して確認できます。"></textarea>
+          </label>
+          <div class="receipt-ocr-status" id="receiptOcrStatus" role="status" aria-live="polite"></div>
+          <button class="ghost-button" id="parseReceipt" type="button">候補を作る</button>
+          <div class="receipt-candidate" id="receiptCandidate"></div>
+          <div class="receipt-edit" id="receiptEdit" hidden>
+            <label>
+              <span>金額</span>
+              <input id="receiptAmountInput" type="text" inputmode="numeric" pattern="[0-9０-９,，]*">
+            </label>
+            <div class="receipt-amount-candidates" id="receiptAmountCandidates" hidden></div>
+            <div class="receipt-edit-row">
+              <label>
+                <span>日付</span>
+                <div class="date-picker-wrap receipt-date-picker" id="receiptDatePickerWrap">
+                  <button class="date-picker-button" id="receiptDatePickerButton" type="button" aria-expanded="false">
+                    <strong id="receiptDatePickerLabel"></strong>
+                    <span>日付を選択</span>
+                  </button>
+                  <input id="receiptDateInput" type="hidden">
+                  <div class="date-picker-panel receipt-date-picker-panel" id="receiptDatePickerPanel" hidden>
+                    <div class="date-picker-head">
+                      <button class="icon-button" id="receiptDatePickerPrev" type="button" aria-label="前の月" title="前の月">‹</button>
+                      <strong id="receiptDatePickerMonthLabel"></strong>
+                      <button class="icon-button" id="receiptDatePickerNext" type="button" aria-label="次の月" title="次の月">›</button>
+                    </div>
+                    <button class="today-mini-button" id="receiptDatePickerToday" type="button">今日へ移動</button>
+                    <div class="date-picker-grid" id="receiptDatePickerGrid"></div>
+                  </div>
+                </div>
+              </label>
+              <label>
+                <span>カテゴリ</span>
+                <select id="receiptCategoryInput"></select>
+              </label>
             </div>
-            <article class="word-detail-card">
-              <div id="word-detail-range" class="word-detail-range"></div>
-              <section class="word-detail-block">
-                <h2 id="word-detail-main-label">英文</h2>
-                <p id="word-detail-main" class="word-detail-main"></p>
-              </section>
-              <section class="word-detail-block">
-                <h2 id="word-detail-sub-label">日本語訳</h2>
-                <p id="word-detail-sub"></p>
-              </section>
-              <section id="word-detail-answer-block" class="word-detail-block">
-                <h2>正解</h2>
-                <p id="word-detail-answer"></p>
-              </section>
-              <button id="word-detail-bookmark-button" class="secondary-button word-detail-bookmark-button" type="button">しおりに追加</button>
-            </article>
+            <label>
+              <span>メモ</span>
+              <input id="receiptMemoInput" type="text" maxlength="120">
+            </label>
           </div>
+          <button class="primary-button" id="applyReceipt" type="button">確認して追加</button>
         </div>
+      </form>
+    </dialog>
 
-        <div id="word-list-content" class="word-list-content"></div>
-        <div id="word-search-results" class="word-search-results is-hidden"></div>
-      </section>
-
-      <section id="study-screen" class="screen study-screen" aria-labelledby="study-title">
-        <header class="study-status">
-          <button class="quit-button" data-action="quit-study" title="学習を終了">× 終了</button>
-          <div class="study-metrics">
-            <span id="question-count">1 / 10</span>
-            <div class="study-metric-row">
-              <button id="cloze-explanation-button" class="study-hint-button cloze-explanation-button is-hidden" type="button" data-action="open-cloze-explanation">解説</button>
-              <strong id="accuracy">正答率 0%</strong>
-            </div>
-            <button id="hint-current-button" class="study-hint-button is-hidden" type="button">ヒント</button>
-          </div>
-        </header>
-
-        <div id="time-bar" class="time-bar is-hidden" aria-hidden="true">
-          <div id="time-bar-fill" class="time-bar-fill"></div>
-          <span id="time-bar-text">10s</span>
-        </div>
-
-        <div class="question-card">
-          <p id="study-title" class="eyebrow">問題</p>
-          <button id="bookmark-current-button" class="bookmark-current-button" type="button" aria-label="しおりを付ける"><span></span>しおり</button>
-          <div id="question-text" class="question-text"></div>
-          <div id="feedback" class="feedback" aria-live="polite"></div>
-          <div id="answer-note" class="answer-note"></div>
-        </div>
-
-        <div id="answer-area" class="answer-area"></div>
-        <button id="next-button" class="primary-button wide is-hidden">次へ</button>
-      </section>
-
-      <section id="result-screen" class="screen" aria-labelledby="result-title">
-        <header class="topbar compact">
-          <div>
-            <p class="eyebrow">Result</p>
-            <h1 id="result-title">結果</h1>
-          </div>
-        </header>
-
-        <div class="result-summary">
-          <div>
-            <span id="result-correct">0</span>
-            <p>正解</p>
-          </div>
-          <div>
-            <span id="result-wrong">0</span>
-            <p>不正解</p>
-          </div>
-          <div>
-            <span id="result-accuracy">0%</span>
-            <p>正答率</p>
-          </div>
-        </div>
-
-        <section id="result-goal-panel" class="settings-block result-goal-panel">
-          <div>
-            <h2>今日の目標</h2>
-            <p id="result-goal-detail">0問 / 50問</p>
-          </div>
-          <div class="goal-progress-track" aria-hidden="true">
-            <div id="result-goal-progress" class="goal-progress-fill"></div>
-          </div>
-        </section>
-
-        <div class="result-actions">
-          <button class="secondary-button" data-result-action="retry-wrong">間違えた単語だけ</button>
-          <button class="secondary-button" data-result-action="repeat-same">同じ設定でもう一度</button>
-          <button class="secondary-button" data-action="back-to-setup">ホームに戻る</button>
-        </div>
-
-        <section class="wrong-section">
-          <div class="wrong-section-head">
-            <h2>間違えた単語</h2>
-            <button id="toggle-wrong-bookmarks-button" class="secondary-button small" type="button">まとめてしおり</button>
-          </div>
-          <div id="wrong-list" class="wrong-list"></div>
-        </section>
-      </section>
-
-      <div id="quit-dialog" class="dialog-backdrop is-hidden" role="dialog" aria-modal="true" aria-labelledby="quit-dialog-title">
-        <div class="dialog-panel">
-          <h2 id="quit-dialog-title">学習を終了しますか？</h2>
-          <p id="quit-dialog-message">現在の学習結果は保存されず、モード選択に戻ります。</p>
-          <div class="dialog-actions">
-            <button id="confirm-quit-button" class="danger-button">終了する</button>
-            <button id="cancel-quit-button" class="secondary-button">続ける</button>
-          </div>
-        </div>
-      </div>
-
-      <div id="bookmark-dialog" class="dialog-backdrop is-hidden" role="dialog" aria-modal="true" aria-labelledby="bookmark-dialog-title">
-        <div class="dialog-panel bookmark-dialog-panel">
-          <div class="bookmark-dialog-head">
-            <div>
-              <p class="eyebrow">Bookmarks</p>
-              <h2 id="bookmark-dialog-title">復習一覧</h2>
-            </div>
-            <div class="dialog-head-actions">
-              <button id="clear-bookmarks-button" class="danger-button small" type="button">一括解除</button>
-              <button id="close-bookmark-dialog-button" class="secondary-button small" type="button">閉じる</button>
-            </div>
-          </div>
-          <div class="review-list-tabs">
-            <button id="bookmark-tab-button" class="secondary-button small is-selected" type="button">しおり</button>
-            <button id="recent-mistake-tab-button" class="secondary-button small" type="button">最近ミス</button>
-          </div>
-          <div id="bookmark-list" class="bookmark-list"></div>
-        </div>
-      </div>
-
-      <div id="study-history-dialog" class="dialog-backdrop is-hidden" role="dialog" aria-modal="true" aria-labelledby="study-history-title">
-        <div class="dialog-panel study-history-dialog-panel">
-          <div class="study-history-dialog-head">
-            <div>
-              <p id="study-history-deck-name" class="eyebrow"></p>
-              <h2 id="study-history-title">学習履歴</h2>
-            </div>
-            <button id="close-study-history-button" class="secondary-button small" type="button">閉じる</button>
-          </div>
-          <div id="study-history-list" class="study-history-list"></div>
-        </div>
-      </div>
-
-      <div id="cloze-explanation-dialog" class="dialog-backdrop is-hidden" role="dialog" aria-modal="true" aria-labelledby="cloze-explanation-title">
-        <div class="dialog-panel cloze-explanation-dialog-panel">
-          <div class="cloze-explanation-dialog-head">
-            <div>
-              <p class="eyebrow">Explanation</p>
-              <h2 id="cloze-explanation-title">解説</h2>
-            </div>
-            <button id="close-cloze-explanation-button" class="secondary-button small" type="button">閉じる</button>
-          </div>
-          <div class="cloze-explanation-dialog-body">
-            <section>
-              <h3>正解</h3>
-              <p id="cloze-explanation-answer"></p>
-            </section>
-            <section>
-              <h3>解説</h3>
-              <p id="cloze-explanation-text"></p>
-            </section>
-          </div>
-        </div>
-      </div>
-
-      <div id="range-dialog" class="dialog-backdrop is-hidden" role="dialog" aria-modal="true" aria-labelledby="range-dialog-title">
-        <div class="dialog-panel range-dialog-panel">
-          <div class="range-dialog-head">
-            <div>
-              <p class="eyebrow">Study range</p>
-              <h2 id="range-dialog-title">出題範囲を選択</h2>
-            </div>
-            <button id="close-range-dialog-button" class="secondary-button small" type="button">閉じる</button>
-          </div>
-          <div id="range-toolbar" class="range-toolbar"></div>
-          <div id="range-list" class="range-list"></div>
-        </div>
-      </div>
-
-      <div id="favorite-preset-dialog" class="dialog-backdrop is-hidden" role="dialog" aria-modal="true" aria-labelledby="favorite-preset-dialog-title">
-        <div class="dialog-panel favorite-preset-dialog-panel">
-          <div class="favorite-preset-dialog-head">
-            <div>
-              <p class="eyebrow">Favorites</p>
-              <h2 id="favorite-preset-dialog-title">お気に入りプリセット</h2>
-            </div>
-            <button id="close-favorite-preset-dialog-button" class="secondary-button small" type="button">閉じる</button>
-          </div>
-          <div id="favorite-preset-menu" class="favorite-preset-menu"></div>
-        </div>
-      </div>
-
-      <div id="toast" class="toast is-hidden" role="status" aria-live="polite"></div>
-    </main>
-
-    <template id="deck-card-template">
-      <article class="deck-card">
-        <div>
-          <h2></h2>
-          <p></p>
-        </div>
-        <div class="deck-actions">
-          <button class="danger-button small" data-role="delete">削除</button>
-          <button class="primary-button small" data-role="study">学習</button>
-        </div>
-      </article>
-    </template>
-
-    <script src="app.js?v=20260522-63"></script>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="app.js"></script>
   </body>
 </html>
